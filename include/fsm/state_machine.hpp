@@ -14,16 +14,44 @@ namespace fsm {
 template <typename Enum>
 class state_machine
 {
+    public: template<class F, class...Args>
+    static auto guard(F&& f, Args&&... args) -> std::function<bool()>
+    {
+        return std::bind(f, args...);
+    }
+
+    public: template<class F, class...Args>
+    static auto event(F&& f, Args&&... args) -> std::function<void()>
+    {
+        return std::bind(f, args...);
+    }
+
     public: struct state
     {
+        using event_type = std::function<void()>;
+        using guard_type = std::function<bool()>;
         Enum current_state;
         Enum next_state;
 
         // This function is called when the state is entered
-        std::function<void()> trigger   = [] () {};
+        event_type event;
 
         // conditional guard requirement which must be satisfied to visit state
-        std::function<bool()> condition = [] () { return true; };
+        guard_type guard;
+
+        state(Enum current_state, Enum next_state)
+        :   current_state(current_state)
+        ,   next_state(next_state) {}
+
+        state(Enum current_state, Enum next_state, event_type event)
+        :   current_state(current_state)
+        ,   next_state(next_state)
+        ,   event(event) {}
+
+        state(Enum current_state, Enum next_state, guard_type guard)
+        :   current_state(current_state)
+        ,   next_state(next_state)
+        ,   guard(guard) {}
     };
 
     private: std::vector<state> transition_matrix_;
@@ -50,7 +78,7 @@ class state_machine
             transition_matrix_.end(),
             std::back_inserter(valid_next_states),
             std::bind(
-                &state_machine::condition_satisfied,
+                &state_machine::guard_satisfied,
                 this,
                 std::placeholders::_1));
 
@@ -71,16 +99,16 @@ class state_machine
      * @param  state a given state in the transition matrix
      * @return       true if state can be entered
      */
-    private: bool condition_satisfied(const state state)
+    private: bool guard_satisfied(const state state)
     {
         return (state.current_state == current_state_ &&
-                state.condition() == true);
+                state.guard() == true);
     }
 
     private: void transition(const state state)
     {
         std::cout << "transition()\n";
-        state.trigger();
+        state.event();
         current_state_ = state.next_state;
         std::cout
           << static_cast<std::uint32_t>(state.current_state)
