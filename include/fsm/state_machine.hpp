@@ -52,6 +52,22 @@ class state_machine
         :   current_state(current_state)
         ,   next_state(next_state)
         ,   guard(guard) {}
+
+        state(Enum current_state, Enum next_state, 
+            guard_type guard, 
+            event_type event)
+        :   current_state(current_state)
+        ,   next_state(next_state)
+        ,   guard(guard) 
+        ,   event(event) {}
+
+        state(Enum current_state, Enum next_state, 
+            event_type event,
+            guard_type guard)
+        :   current_state(current_state)
+        ,   next_state(next_state)
+        ,   event(event)
+        ,   guard(guard) {}
     };
 
     private: std::vector<state> transition_matrix_;
